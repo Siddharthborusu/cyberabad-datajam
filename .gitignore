@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+
+# Raw datasets
+data/raw/
+
+# Generated / derived outputs
+outputs/
+
+# Local editor files
+.vscode/
+.idea/
