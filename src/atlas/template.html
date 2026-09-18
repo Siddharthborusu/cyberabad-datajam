@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyderabad Mobility Atlas</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f4f6f8;
+  color: #1a1f2e;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ── Control panel ── */
+.panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  width: 260px;
+  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(26,31,46,0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(26,31,46,0.10);
+  backdrop-filter: blur(10px);
+  padding: 16px 18px;
+  pointer-events: auto;
+}
+
+.panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+.panel-heading {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+  color: #111827;
+  margin-bottom: 14px;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: #eef0f3;
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 14px;
+}
+
+.mode-toggle button {
+  flex: 1;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mode-toggle button.active {
+  background: #111827;
+  color: #fff;
+}
+
+.legend-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #374151;
+  margin: 6px 0;
+}
+
+.legend-line {
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-ring {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid #e87722;
+  background: rgba(232,119,34,0.12);
+  flex-shrink: 0;
+}
+
+.panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.info-btn {
+  border: none;
+  background: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.info-btn:hover { color: #111827; }
+
+/* ── Evidence card ── */
+.evidence {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  width: 280px;
+  background: rgba(255,255,255,0.96);
+  border: 1px solid rgba(26,31,46,0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(26,31,46,0.10);
+  backdrop-filter: blur(10px);
+  padding: 18px 20px;
+  display: none;
+  pointer-events: auto;
+}
+
+.evidence.visible { display: block; }
+
+.evidence-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+}
+
+.evidence-close:hover { color: #111827; }
+
+.evidence-type {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.evidence-title {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.2px;
+  color: #111827;
+  margin-bottom: 14px;
+  padding-right: 20px;
+}
+
+.evidence-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  margin: 7px 0;
+}
+
+.evidence-row span { color: #6b7280; }
+.evidence-row strong { color: #111827; text-align: right; font-weight: 600; }
+
+.evidence-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.evidence-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
+
+.evidence-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.evidence-stat {
+  text-align: center;
+}
+
+.evidence-stat-value {
+  font-size: 15px;
+  font-weight: 650;
+  color: #111827;
+}
+
+.evidence-stat-label {
+  font-size: 9px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.evidence-note {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 10px;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+/* ── Methodology modal ── */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(17,24,39,0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.modal-overlay.visible { display: flex; }
+
+.modal {
+  width: min(420px, calc(100vw - 32px));
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(17,24,39,0.18);
+  padding: 24px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+.modal h2 {
+  font-size: 16px;
+  font-weight: 650;
+  margin: 0 0 12px;
+  color: #111827;
+}
+
+.modal p, .modal li {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.modal ul { padding-left: 18px; margin: 8px 0; }
+
+.modal-close {
+  margin-top: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #374151;
+}
+
+.modal-close:hover { background: #f3f4f6; }
+
+/* ── Map labels ── */
+.station-label {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 10px;
+  font-weight: 600;
+  color: #1a1f2e;
+  white-space: nowrap;
+  text-shadow:
+    -1px -1px 0 #fff,
+     1px -1px 0 #fff,
+    -1px  1px 0 #fff,
+     1px  1px 0 #fff,
+     0 0 4px #fff;
+  pointer-events: none;
+}
+
+.station-label.mmts-label {
+  font-size: 9px;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* ── Leaflet overrides ── */
+.leaflet-container { background: #eef0f3; font-family: inherit; }
+.leaflet-control-attribution { font-size: 9px; opacity: 0.7; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="panel">
+  <div class="panel-title">Hyderabad</div>
+  <div class="panel-heading">Mobility Atlas</div>
+
+  <div class="mode-toggle">
+    <button id="btn-explore" class="active" onclick="setMode('explore')">Explore</button>
+    <button id="btn-analyse" onclick="setMode('analyse')">Analyse</button>
+  </div>
+
+  <div class="legend-label">Legend</div>
+
+  <div class="legend-item">
+    <span class="legend-line" style="background:#E31E24"></span>
+    Metro Red
+  </div>
+  <div class="legend-item">
+    <span class="legend-line" style="background:#009846"></span>
+    Metro Green
+  </div>
+  <div class="legend-item">
+    <span class="legend-line" style="background:#007ABB"></span>
+    Metro Blue
+  </div>
+  <div class="legend-item">
+    <span class="legend-line" style="background:#344054"></span>
+    MMTS
+  </div>
+  <div class="legend-item">
+    <span class="legend-dot" style="background:#5a9eaa"></span>
+    TGSRTC
+  </div>
+  <div class="legend-item">
+    <span class="legend-ring"></span>
+    Potential multimodal hub
+  </div>
+
+  <div class="panel-footer">
+    <span style="font-size:10px;color:#9ca3af">Cyberabad Data Jam 2026</span>
+    <button class="info-btn" onclick="openInfo()">Methodology</button>
+  </div>
+</div>
+
+<div class="evidence" id="evidence">
+  <button class="evidence-close" onclick="closeEvidence()" aria-label="Close">&times;</button>
+  <div id="evidence-content"></div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeInfo(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2>Methodology</h2>
+    <p>This atlas visualises Hyderabad's scheduled public transport network and spatial connectivity. It is built from:</p>
+    <ul>
+      <li>HMRL Metro GTFS (September 2026) — route geometry from <code>shapes.txt</code></li>
+      <li>TGSRTC bus GTFS (June 2026) — 4,709 stops, scheduled service counts</li>
+      <li>MMTS commuter rail GTFS — station sequences derived as LineStrings</li>
+      <li>OSM drive network — major road classes for geographic context</li>
+      <li>Processed multimodal hub analysis — spatial proximity + bus catchment</li>
+    </ul>
+    <p><strong>Important:</strong> All service figures represent <em>scheduled trips</em>, not live operational frequency or reliability. Distance values are straight-line distances unless stated otherwise — not pedestrian routes.</p>
+    <p>Potential multimodal hubs indicate spatial proximity and scheduled bus-service context. They do not establish interchange quality or pedestrian accessibility.</p>
+    <button class="modal-close" onclick="closeInfo()">Close</button>
+  </div>
+</div>
+
+<script>
+const DATA = __DATA__;
+
+let mode = "explore";
+let hubLayer = null;
+let busConnLayer = null;
+let mmtsConnLayer = null;
+let labelLayer = null;
+
+/* ── Formatters ── */
+function fmtNum(v) {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return "—";
+  return Number(v).toLocaleString("en-IN");
+}
+
+function fmtDist(v) {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return "—";
+  const m = Number(v);
+  return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(2)} km`;
+}
+
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s || "—";
+  return d.innerHTML;
+}
+
+/* ── Evidence panel ── */
+function closeEvidence() {
+  document.getElementById("evidence").classList.remove("visible");
+}
+
+function showEvidence(html) {
+  document.getElementById("evidence-content").innerHTML = html;
+  document.getElementById("evidence").classList.add("visible");
+}
+
+function showMetroDetail(p) {
+  showEvidence(`
+    <div class="evidence-type">Metro station</div>
+    <div class="evidence-title">${esc(p.name)}</div>
+    <div class="evidence-row"><span>Metro line</span><strong>${esc(p.line)}</strong></div>
+    <div class="evidence-section">
+      <div class="evidence-section-label">Bus catchment · 500 m</div>
+      <div class="evidence-stats">
+        <div class="evidence-stat"><div class="evidence-stat-value">${fmtNum(p.bus_stops)}</div><div class="evidence-stat-label">stops</div></div>
+        <div class="evidence-stat"><div class="evidence-stat-value">${fmtNum(p.bus_routes)}</div><div class="evidence-stat-label">routes</div></div>
+        <div class="evidence-stat"><div class="evidence-stat-value">${fmtNum(p.catchment_scheduled_trips)}</div><div class="evidence-stat-label">scheduled trips</div></div>
+      </div>
+    </div>
+    <div class="evidence-row"><span>Nearest bus stop</span><strong>${fmtDist(p.nearest_bus_m)}</strong></div>
+    <div class="evidence-row"><span>Nearest MMTS</span><strong>${fmtDist(p.nearest_mmts_m)}</strong></div>
+    <div class="evidence-note">Evidence: GTFS + spatial proximity.<br>Distance is straight-line, not pedestrian routing.</div>
+  `);
+}
+
+function showHubDetail(p) {
+  showEvidence(`
+    <div class="evidence-type">Potential multimodal hub</div>
+    <div class="evidence-title">${esc(p.metro_station)}</div>
+    <div class="evidence-row"><span>Nearest MMTS</span><strong>${esc(p.mmts_station)}</strong></div>
+    <div class="evidence-row"><span>Metro → MMTS</span><strong>${fmtDist(p.mmts_distance_m)}</strong></div>
+    <div class="evidence-section">
+      <div class="evidence-section-label">Bus catchment · 500 m</div>
+      <div class="evidence-stats">
+        <div class="evidence-stat"><div class="evidence-stat-value">${fmtNum(p.bus_stops_500m)}</div><div class="evidence-stat-label">stops</div></div>
+        <div class="evidence-stat"><div class="evidence-stat-value">${fmtNum(p.bus_routes_500m)}</div><div class="evidence-stat-label">routes</div></div>
+        <div class="evidence-stat"><div class="evidence-stat-value">${fmtNum(p.bus_trips_500m)}</div><div class="evidence-stat-label">scheduled trips</div></div>
+      </div>
+    </div>
+    <div class="evidence-note">Evidence: GTFS + spatial proximity.<br>Distances are straight-line distances, not pedestrian routes.</div>
+  `);
+}
+
+function showBusDetail(p) {
+  showEvidence(`
+    <div class="evidence-type">TGSRTC bus stop</div>
+    <div class="evidence-title">${esc(p.name)}</div>
+    <div class="evidence-row"><span>Routes serving</span><strong>${fmtNum(p.routes)}</strong></div>
+    <div class="evidence-row"><span>Scheduled trips</span><strong>${fmtNum(p.scheduled_trips)}</strong></div>
+  `);
+}
+
+function showMmtsDetail(p) {
+  showEvidence(`
+    <div class="evidence-type">MMTS station</div>
+    <div class="evidence-title">${esc(p.name)}</div>
+  `);
+}
+
+function openInfo() {
+  document.getElementById("modal").classList.add("visible");
+}
+
+function closeInfo(e) {
+  if (!e || e.target === document.getElementById("modal")) {
+    document.getElementById("modal").classList.remove("visible");
+  }
+}
+
+/* ── Hub ring styling ── */
+function hubStyle(analyse) {
+  return {
+    radius: analyse ? 16 : 13,
+    fillColor: "#e87722",
+    fillOpacity: analyse ? 0.10 : 0.04,
+    color: "#e87722",
+    weight: analyse ? 2.5 : 1.5,
+    opacity: analyse ? 0.85 : 0.55,
+    interactive: true,
+  };
+}
+
+function buildHubLayer(analyse) {
+  return L.geoJSON(DATA.hubs, {
+    pointToLayer(feature, latlng) {
+      return L.circleMarker(latlng, hubStyle(analyse));
+    },
+    onEachFeature(feature, layer) {
+      layer.on("click", () => showHubDetail(feature.properties));
+      layer.bindTooltip(
+        `<strong>${esc(feature.properties.metro_station)}</strong><br>Potential multimodal hub`,
+        { direction: "top", offset: [0, -8], opacity: 0.92 }
+      );
+    },
+  });
+}
+
+/* ── Map init ── */
+const map = L.map("map", {
+  center: DATA.meta.center,
+  zoom: DATA.meta.zoom,
+  zoomControl: true,
+  preferCanvas: true,
+});
+
+L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19,
+}).addTo(map);
+
+/* Roads — subordinate context */
+const roadsLayer = L.geoJSON(DATA.roads, {
+  style() {
+    return { color: "#b0b8c4", weight: 1, opacity: 0.35 };
+  },
+  interactive: false,
+}).addTo(map);
+
+/* TGSRTC — texture */
+const busLayer = L.geoJSON(DATA.bus, {
+  pointToLayer(feature, latlng) {
+    return L.circleMarker(latlng, {
+      radius: 2,
+      fillColor: "#5a9eaa",
+      fillOpacity: 0.55,
+      color: "#5a9eaa",
+      weight: 0,
+      interactive: true,
+    });
+  },
+  onEachFeature(feature, layer) {
+    const p = feature.properties;
+    layer.on("click", () => showBusDetail(p));
+    layer.bindTooltip(
+      `<strong>${esc(p.name)}</strong><br>${fmtNum(p.routes)} routes · ${fmtNum(p.scheduled_trips)} scheduled trips`,
+      { direction: "top", opacity: 0.92 }
+    );
+  },
+}).addTo(map);
+
+/* MMTS lines */
+const mmtsLinesLayer = L.geoJSON(DATA.mmts_lines, {
+  style() {
+    return { color: "#344054", weight: 2.5, opacity: 0.75, lineCap: "round", lineJoin: "round" };
+  },
+  interactive: false,
+}).addTo(map);
+
+/* Metro lines — dominant */
+const metroLinesLayer = L.geoJSON(DATA.metro_lines, {
+  style(feature) {
+    return {
+      color: feature.properties.color || "#667085",
+      weight: 5,
+      opacity: 0.92,
+      lineCap: "round",
+      lineJoin: "round",
+    };
+  },
+  interactive: false,
+}).addTo(map);
+
+/* MMTS stations */
+const mmtsLayer = L.geoJSON(DATA.mmts, {
+  pointToLayer(feature, latlng) {
+    return L.circleMarker(latlng, {
+      radius: 4,
+      fillColor: "#344054",
+      fillOpacity: 0.9,
+      color: "#ffffff",
+      weight: 1.5,
+      interactive: true,
+    });
+  },
+  onEachFeature(feature, layer) {
+    const p = feature.properties;
+    layer.on("click", () => showMmtsDetail(p));
+    layer.bindTooltip(`<strong>${esc(p.name)}</strong><br>MMTS`, { direction: "top", opacity: 0.92 });
+  },
+}).addTo(map);
+
+/* Metro stations */
+function metroMarkerStyle(p) {
+  if (p.interchange && p.colors && p.colors.length > 1) {
+    return {
+      radius: 6,
+      fillColor: p.colors[0],
+      fillOpacity: 1,
+      color: p.colors[1],
+      weight: 3,
+      interactive: true,
+    };
+  }
+  return {
+    radius: 5.5,
+    fillColor: p.color || "#667085",
+    fillOpacity: 1,
+    color: "#ffffff",
+    weight: 2,
+    interactive: true,
+  };
+}
+
+/* Hub rings — below metro markers */
+hubLayer = buildHubLayer(false);
+hubLayer.addTo(map);
+
+const metroLayer = L.geoJSON(DATA.metro, {
+  pointToLayer(feature, latlng) {
+    return L.circleMarker(latlng, metroMarkerStyle(feature.properties));
+  },
+  onEachFeature(feature, layer) {
+    const p = feature.properties;
+    layer.on("click", () => showMetroDetail(p));
+    layer.bindTooltip(`<strong>${esc(p.name)}</strong><br>${esc(p.line)}`, { direction: "top", opacity: 0.92 });
+  },
+}).addTo(map);
+
+/* Analyse-only connection layers (not added yet) */
+busConnLayer = L.geoJSON(DATA.bus_connections, {
+  style() {
+    return { color: "#5a9eaa", weight: 1.5, opacity: 0.55, dashArray: "4 6" };
+  },
+  onEachFeature(feature, layer) {
+    const p = feature.properties;
+    layer.bindTooltip(
+      `<strong>${esc(p.metro)}</strong> → ${esc(p.target)}<br>${fmtDist(p.distance_m)}`,
+      { sticky: true, opacity: 0.92 }
+    );
+  },
+});
+
+mmtsConnLayer = L.geoJSON(DATA.mmts_connections, {
+  style() {
+    return { color: "#344054", weight: 1.5, opacity: 0.65, dashArray: "6 4" };
+  },
+  onEachFeature(feature, layer) {
+    const p = feature.properties;
+    layer.bindTooltip(
+      `<strong>${esc(p.metro)}</strong> → ${esc(p.target)}<br>${fmtDist(p.distance_m)}`,
+      { sticky: true, opacity: 0.92 }
+    );
+  },
+});
+
+/* Selective labels */
+labelLayer = L.layerGroup().addTo(map);
+
+function updateLabels() {
+  labelLayer.clearLayers();
+  const z = map.getZoom();
+
+  if (z >= 12) {
+    DATA.metro.features.forEach(f => {
+      const [lon, lat] = f.geometry.coordinates;
+      L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: "station-label",
+          html: esc(f.properties.name),
+          iconSize: [0, 0],
+          iconAnchor: [-8, 4],
+        }),
+        interactive: false,
+      }).addTo(labelLayer);
+    });
+  }
+
+  if (z >= 14) {
+    DATA.mmts.features.forEach(f => {
+      const [lon, lat] = f.geometry.coordinates;
+      L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: "station-label mmts-label",
+          html: esc(f.properties.name),
+          iconSize: [0, 0],
+          iconAnchor: [-6, 4],
+        }),
+        interactive: false,
+      }).addTo(labelLayer);
+    });
+  }
+}
+
+map.on("zoomend", updateLabels);
+updateLabels();
+
+/* ── Mode switch ── */
+function setMode(next) {
+  mode = next;
+
+  document.getElementById("btn-explore").classList.toggle("active", mode === "explore");
+  document.getElementById("btn-analyse").classList.toggle("active", mode === "analyse");
+
+  /* Rebuild hub rings with appropriate emphasis */
+  map.removeLayer(hubLayer);
+  hubLayer = buildHubLayer(mode === "analyse");
+  hubLayer.addTo(map);
+
+  /* Toggle analytical connection layers */
+  if (mode === "analyse") {
+    busConnLayer.addTo(map);
+    mmtsConnLayer.addTo(map);
+  } else {
+    if (map.hasLayer(busConnLayer)) map.removeLayer(busConnLayer);
+    if (map.hasLayer(mmtsConnLayer)) map.removeLayer(mmtsConnLayer);
+    closeEvidence();
+  }
+
+  /* Preserve visual hierarchy: transit above context */
+  roadsLayer.bringToBack();
+  if (mode === "analyse") {
+    busConnLayer.bringToFront();
+    mmtsConnLayer.bringToFront();
+  }
+  mmtsLinesLayer.bringToFront();
+  metroLinesLayer.bringToFront();
+  busLayer.bringToFront();
+  mmtsLayer.bringToFront();
+  hubLayer.bringToFront();
+  metroLayer.bringToFront();
+  labelLayer.bringToFront();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+
+POTENTIAL MULTIMODAL HUBS
+
+             metro_station     mmts_station  mmts_distance_m  bus_stops_500m  bus_routes_500m  bus_trips_500m
+              Bharat Nagar      BHARATNAGAR               56               3               66            1415
+                  Malakpet         MALAKPET              110               9              259            4253
+               Khairatabad      KHAIRATABAD              151               4               67            2184
+                  Begumpet         BEGUMPET              180               6               74            2091
+              Lakdi-ka-pul       LAKDIKAPUL              189              10              194            5215
+         Secunderabad West     SECUNDERABAD              219               2              354            8234
+                  Nampally        HYDERABAD              274               8              139            3137
+         Secunderabad East     SECUNDERABAD              467              11              496           12726
+                  Assembly        HYDERABAD              708               6              147            3798
+                 Erragadda      BHARATNAGAR              712               4               85            1574
+                 Mettuguda     SITAFALMANDI              793               4              172            3791
+               Erra Manzil    NECKLACE ROAD              808               4               74            2244
+                Rasoolpura SANJEEVAIAH PARK              890               4               75            2124
+           Gandhi Hospital     SECUNDERABAD              915               4               62            1812
+             Gandhi Bhavan        HYDERABAD              956               6              154            3341
+                New Market         MALAKPET              958               5              180            2279
+Mahatma Gandhi Bus Station         MALAKPET              982               5              146            2354
+
+Count: 17
